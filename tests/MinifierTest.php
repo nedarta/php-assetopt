@@ -1,15 +1,15 @@
 <?php
 
-namespace tubalmartin\CssMin\Tests;
+namespace nedarta\CssMin\Tests;
 
-use tubalmartin\CssMin\Minifier;
-use PHPUnit_Framework_TestCase;
+use nedarta\CssMin\Minifier;
+use PHPUnit\Framework\TestCase;
 
-class MinifierTest extends PHPUnit_Framework_TestCase
+class MinifierTest extends TestCase
 {
     protected $cssmin;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->cssmin = new Minifier;
     }
@@ -172,6 +172,11 @@ class MinifierTest extends PHPUnit_Framework_TestCase
         $this->execTest('font-weight');
     }
 
+    public function testFontFamilyColor()
+    {
+        $this->execTest('font-family-color');
+    }
+
     public function testImportantRule()
     {
         $this->execTest('important');
@@ -304,9 +309,19 @@ class MinifierTest extends PHPUnit_Framework_TestCase
         $this->execTest('mui');
     }
 
+    public function testModernSyntax()
+    {
+        $this->execTest('modern-syntax');
+    }
+
     public function testPure()
     {
         $this->execTest('pure');
+    }
+
+    public function testUnclosedCurlyBrace()
+    {
+        $this->execTest('unclosed-curly-brace');
     }
 
 }

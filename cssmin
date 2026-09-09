@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-use tubalmartin\CssMin\Command;
+use nedarta\CssMin\Command;
 
 $autoloadPath = null;
 $autoloadPaths = array(

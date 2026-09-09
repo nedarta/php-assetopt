@@ -2,53 +2,18 @@
 
 require '../vendor/autoload.php';
 
-use tubalmartin\CssMin\Minifier as CSSmin;
+use nedarta\CssMin\Minifier as CSSmin;
 
 mb_internal_encoding('UTF-8');
-
-/**
- * Navigates through an array and removes slashes from the values.
- *
- * If an array is passed, the array_map() function causes a callback to pass the
- * value back to the function. The slashes from this value will removed.
- *
- * @param array|string $value The array or string to be stripped.
- * @return array|string Stripped array (or string in the callback).
- */
-function stripslashes_deep($value)
-{
-    if (is_array($value)) {
-        $value = array_map('stripslashes_deep', $value);
-    } elseif (is_object($value)) {
-        $vars = get_object_vars($value);
-        foreach ($vars as $key => $data) {
-            $value->{$key} = stripslashes_deep($data);
-        }
-    } else {
-        $value = stripslashes($value);
-    }
-
-    return $value;
-}
-
-// Disable magic quotes at runtime.
-if (function_exists('ini_set')) {
-    ini_set('magic_quotes_sybase', 0);
-    ini_set('get_magic_quotes_runtime', 0);
-}
-
-// If get_magic_quotes_gpc is active, strip slashes
-if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
-    $_POST = stripslashes_deep($_POST);
-}
 
 
 if (!empty($_POST)) :
     // Form options
-    parse_str($_POST['options']);
+    parse_str($_POST['options'], $options);
 
+    $linebreak_pos = isset($options['linebreak_pos']) ? $options['linebreak_pos'] : false;
     $linebreak_pos = trim($linebreak_pos) !== '' ? $linebreak_pos : false;
-    $raise_php = isset($raise_php) ? true : false;
+    $raise_php = isset($options['raise_php']) ? true : false;
 
     // Create a new CSSmin object and try to raise PHP settings
     $compressor = new CSSmin($raise_php);
@@ -57,19 +22,19 @@ if (!empty($_POST)) :
         $compressor->setLineBreakPosition($linebreak_pos);
     }
 
-    if (isset($keep_sourcemap)) {
+    if (isset($options['keep_sourcemap'])) {
         $compressor->keepSourceMapComment();
     }
 
-    if (isset($remove_important_comments)) {
+    if (isset($options['remove_important_comments'])) {
         $compressor->removeImportantComments();
     }
 
     if ($raise_php) {
-        $compressor->setMemoryLimit($memory_limit);
-        $compressor->setMaxExecutionTime($max_execution_time);
-        $compressor->setPcreBacktrackLimit(1000 * $pcre_backtrack_limit);
-        $compressor->setPcreRecursionLimit(1000 * $pcre_recursion_limit);
+        $compressor->setMemoryLimit($options['memory_limit']);
+        $compressor->setMaxExecutionTime($options['max_execution_time']);
+        $compressor->setPcreBacktrackLimit(1000 * $options['pcre_backtrack_limit']);
+        $compressor->setPcreRecursionLimit(1000 * $options['pcre_recursion_limit']);
     }
 
     // Compress the CSS code and store data
@@ -93,13 +58,12 @@ else :
     <title>YUI CSS compressor - PHP</title>
     <link rel="stylesheet" type="text/css" href="third-party/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="styles.css">
-    <link rel="stylesheet/less" type="text/css" href="styles.less">
 </head>
 <body>
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="brand" href="https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port">YUI CSS compressor PHP port</a>
+          <a class="brand" href="https://github.com/nedarta/cssmin">YUI CSS compressor PHP port</a>
         </div>
       </div>
     </div>

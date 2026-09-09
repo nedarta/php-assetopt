@@ -1,6 +1,6 @@
 <?php
 
-namespace tubalmartin\CssMin;
+namespace nedarta\CssMin;
 
 class Utils
 {
@@ -114,7 +114,7 @@ class Utils
     public static function rgbPercentageToRgbInteger($rgbPercentage)
     {
         if (strpos($rgbPercentage, '%') !== false) {
-            $rgbPercentage = self::roundNumber(floatval(str_replace('%', '', $rgbPercentage)) * 2.55);
+            $rgbPercentage = self::roundNumber(floatval(str_replace('%', '', $rgbPercentage)) * 255 / 100);
         }
 
         return intval($rgbPercentage, 10);

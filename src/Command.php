@@ -1,6 +1,6 @@
 <?php
 
-namespace tubalmartin\CssMin;
+namespace nedarta\CssMin;
 
 class Command
 {
@@ -30,12 +30,20 @@ class Command
                 'memory-limit:',
                 'pcre-backtrack-limit:',
                 'pcre-recursion-limit:',
-                'remove-important-comments'
+                'remove-important-comments',
+                'resolve-imports'
             )
         );
 
         $help = $this->getOpt(array('h', 'help'), $opts);
-        $input = $this->getOpt(array('i', 'input'), $opts);
+
+        $inputs = array();
+        foreach (array('i', 'input') as $alias) {
+            if (isset($opts[$alias])) {
+                $inputs = array_merge($inputs, (array) $opts[$alias]);
+            }
+        }
+
         $output = $this->getOpt(array('o', 'output'), $opts);
         $dryrun = $this->getOpt('dry-run', $opts);
         $keepSourceMapComment = $this->getOpt(array('keep-sourcemap', 'keep-sourcemap-comment'), $opts);
@@ -44,29 +52,41 @@ class Command
         $backtrackLimit = $this->getOpt('pcre-backtrack-limit', $opts);
         $recursionLimit = $this->getOpt('pcre-recursion-limit', $opts);
         $removeImportantComments = $this->getOpt('remove-important-comments', $opts);
+        $resolveImports = $this->getOpt('resolve-imports', $opts);
 
         if (!is_null($help)) {
             $this->showHelp();
             die(self::SUCCESS_EXIT);
         }
 
-        if (is_null($input)) {
+        if (empty($inputs)) {
             fwrite(STDERR, '-i <file> argument is missing' . PHP_EOL);
             $this->showHelp();
             die(self::FAILURE_EXIT);
         }
 
-        if (!is_readable($input)) {
-            fwrite(STDERR, 'Input file is not readable' . PHP_EOL);
-            die(self::FAILURE_EXIT);
+        foreach ($inputs as $input) {
+            if (!is_readable($input)) {
+                fwrite(STDERR, sprintf('Input file "%s" is not readable%s', $input, PHP_EOL));
+                die(self::FAILURE_EXIT);
+            }
         }
 
-        $css = file_get_contents($input);
+        $css = array();
+        foreach ($inputs as $input) {
+            $fileContents = file_get_contents($input);
 
-        if ($css === false) {
-            fwrite(STDERR, 'Input CSS code could not be retrieved from input file' . PHP_EOL);
-            die(self::FAILURE_EXIT);
+            if ($fileContents === false) {
+                fwrite(STDERR, sprintf('Input CSS code could not be retrieved from input file "%s"%s', $input, PHP_EOL));
+                die(self::FAILURE_EXIT);
+            }
+
+            $css[] = is_null($resolveImports)
+                ? $fileContents
+                : (new ImportResolver)->resolve($fileContents, dirname($input));
         }
+
+        $css = implode("\n", $css);
         
         $this->setStat('original-size', strlen($css));
         
@@ -166,7 +186,7 @@ class Command
         $time = round($microSecs * 1000, $precision);
         
         if ($time >= 60 * 1000) {
-            $time = round($time / 60 * 1000, $precision) .' m'; // m
+            $time = round($time / 60000, $precision) .' m'; // m
         } elseif ($time >= 1000) {
             $time = round($time / 1000, $precision) .' s'; // s
         } else {
@@ -202,9 +222,11 @@ EOT;
     protected function showHelp()
     {
         print <<<'EOT'
-Usage: cssmin [options] -i <file> [-o <file>]
+Usage: cssmin [options] -i <file> [-i <file> ...] [-o <file>]
   
   -i|--input <file>              File containing uncompressed CSS code.
+                                 Can be used multiple times to merge and
+                                 minify external CSS files in the given order.
   -o|--output <file>             File to use to save compressed CSS code.
     
 Options:
@@ -217,6 +239,8 @@ Options:
   --pcre-backtrack-limit <limit> Sets the PCRE backtrack limit for this script.
   --pcre-recursion-limit <limit> Sets the PCRE recursion limit for this script.
   --remove-important-comments    Removes !important comments from output.
+  --resolve-imports              Inlines the stylesheets pointed to by @import
+                                 at-rules (including remote http/https urls).
 
 EOT;
     }

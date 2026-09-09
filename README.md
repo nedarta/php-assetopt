@@ -1,6 +1,6 @@
 # A PHP port of the YUI CSS compressor
 
-[![Latest Stable Version](https://poser.pugx.org/tubalmartin/cssmin/v/stable)](https://packagist.org/packages/tubalmartin/cssmin) [![Total Downloads](https://poser.pugx.org/tubalmartin/cssmin/downloads)](https://packagist.org/packages/tubalmartin/cssmin) [![Daily Downloads](https://poser.pugx.org/tubalmartin/cssmin/d/daily)](https://packagist.org/packages/tubalmartin/cssmin) [![License](https://poser.pugx.org/tubalmartin/cssmin/license)](https://packagist.org/packages/tubalmartin/cssmin)
+[![Latest Stable Version](https://poser.pugx.org/nedarta/cssmin/v/stable)](https://packagist.org/packages/nedarta/cssmin) [![Total Downloads](https://poser.pugx.org/nedarta/cssmin/downloads)](https://packagist.org/packages/nedarta/cssmin) [![Daily Downloads](https://poser.pugx.org/nedarta/cssmin/d/daily)](https://packagist.org/packages/nedarta/cssmin) [![License](https://poser.pugx.org/nedarta/cssmin/license)](https://packagist.org/packages/nedarta/cssmin)
 
 This port is based on version 2.4.8 (Jun 12, 2013) of the [YUI compressor](https://github.com/yui/yuicompressor).   
 This port contains fixes & features not present in the original YUI compressor.
@@ -22,7 +22,7 @@ This port contains fixes & features not present in the original YUI compressor.
 
 Use [Composer](http://getcomposer.org/) to include the library into your project:
 
-    $ composer.phar require tubalmartin/cssmin
+    $ composer.phar require nedarta/cssmin
 
 Require Composer's autoloader file:
 
@@ -31,7 +31,7 @@ Require Composer's autoloader file:
 
 require './vendor/autoload.php';
 
-use tubalmartin\CssMin\Minifier as CSSmin;
+use nedarta\CssMin\Minifier as CSSmin;
 
 // Use it!
 $compressor = new CSSmin;
@@ -61,7 +61,7 @@ There are three ways you can use this library:
 // Autoload libraries
 require './vendor/autoload.php';
 
-use tubalmartin\CssMin\Minifier as CSSmin;
+use nedarta\CssMin\Minifier as CSSmin;
 
 // Extract the CSS code you want to compress from your CSS files
 $input_css = file_get_contents('test.css');
@@ -126,6 +126,22 @@ Output compression result to another file:
 Output compression result to another file and keep sourcemap comment in the output:
 ```
 ./vendor/bin/cssmin -i ./my-css-file.css -o ./my-css-file.min.css --keep-sourcemap
+```
+Merge and minify several external CSS files into one file (files are processed in the given order, duplicate `@charset` rules are removed automatically):
+```
+./vendor/bin/cssmin -i ./reset.css -i ./layout.css -o ./main.min.css
+```
+Inline stylesheets pointed to by `@import` at-rules (local relative paths and remote http/https urls) before minifying — imported stylesheets are resolved recursively, imported files declaring media queries are wrapped in the equivalent `@media` block:
+```
+./vendor/bin/cssmin -i ./my-css-file.css -o ./my-css-file.min.css --resolve-imports
+```
+API users can resolve imports with the `ImportResolver` class before calling `run()`:
+```php
+use nedarta\CssMin\ImportResolver;
+use nedarta\CssMin\Minifier as CSSmin;
+
+$css = (new ImportResolver)->resolve($css, $baseDir); // $baseDir for relative @import urls
+$compressedCss = (new CSSmin)->run($css);
 ```
 See the binary help for all available CLI options.
 
@@ -258,7 +274,7 @@ Values & notes: [pcre.recursion_limit documentation](http://php.net/manual/en/pc
 * [Minify](https://github.com/mrclay/minify) Minify is an HTTP content server. It compresses sources of content (usually files), combines the result and serves it with appropriate HTTP headers.
 * [Autoptimize](http://wordpress.org/plugins/autoptimize/) is a Wordpress plugin. Autoptimize speeds up your website and helps you save bandwidth by aggregating and minimizing JS, CSS and HTML.
 * [IMPRESSPAGES](http://www.impresspages.org/) PHP framework with content editor.
-* [Other dependent Composer packages](https://packagist.org/packages/tubalmartin/cssmin/dependents).
+* [Other dependent Composer packages](https://packagist.org/packages/nedarta/cssmin/dependents).
 
 <a name="changelog"></a>
 
@@ -267,7 +283,7 @@ Values & notes: [pcre.recursion_limit documentation](http://php.net/manual/en/pc
 ### v4.1.1 15 Jan 2018
 
 FIXED:
-* Breakage when minifying at-import rule with unquoted urls containing semicolons [#45](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/45)
+* Breakage when minifying at-import rule with unquoted urls containing semicolons [#45](https://github.com/nedarta/cssmin/issues/45)
 
 ### v4.1.0 16 May 2017
 
@@ -330,7 +346,7 @@ FIXED:
 ### v3.1.2 17 Apr 2017
 
 * Improved compression of long named colors: now all long named colors get compressed to their shorter HEX counterpart.
-* Fixes cases such as [#39](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/39)
+* Fixes cases such as [#39](https://github.com/nedarta/cssmin/issues/39)
 * Huge performance improvement after code profiling. See table below for results when running the whole test suite:
 
 PHP version used: 5.3.29
@@ -391,7 +407,7 @@ PHP version used: 7.0.8
 * Fixed some critical and minor issues, such as:
    * Chunking system breaking some stylesheets (broken at rules block) or leaving some bits off.
    * Backreferences in replacement strings breaking stylesheets.
-   * [#23](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/23)
+   * [#23](https://github.com/nedarta/cssmin/issues/23)
    * Others...
 * Color compression improved. Now all named colors are supported i.e. from `white` to `#fff`.
 * Shortening zero values is back but in a safe manner, shortening values assigned to "safe" properties only i.e. from `margin: 1px 0.0em 0rem 0%` to `margin:1px 0 0`. Check the code to see the list of "safe" properties.
@@ -410,7 +426,7 @@ PHP version used: 7.0.8
 
 ### v2.4.8-p8 27 Mar 2017
 
-* Fixed issue [#18](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/pull/18)
+* Fixed issue [#18](https://github.com/nedarta/cssmin/pull/18)
 * Added `set_chunk_length` method.
 * `bold` & `normal` values get compressed to `700` & `400` respectively for `font-weight` property.
 * GUI updated.
@@ -419,7 +435,7 @@ PHP version used: 7.0.8
 
 ### v2.4.8-p7 26 Mar 2017
 
-* Fixed many issues [#20](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/20), [#22](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/22), [#24](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/24), [#25](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/25), [#26](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/26) reported by contributors and others that I'm sure haven't been reported, at least yet. Sorry for the long delay guys.
+* Fixed many issues [#20](https://github.com/nedarta/cssmin/issues/20), [#22](https://github.com/nedarta/cssmin/issues/22), [#24](https://github.com/nedarta/cssmin/issues/24), [#25](https://github.com/nedarta/cssmin/issues/25), [#26](https://github.com/nedarta/cssmin/issues/26) reported by contributors and others that I'm sure haven't been reported, at least yet. Sorry for the long delay guys.
 * This release is all about stability and reliability and as such I've had to take some controversial decisions such as:
    * Not minifying `none` property value to `0` because in some subtle scenarios the resulting output may render some styles differently.
    * Not removing units from zero length values because in many cases the output will break the intended behavior. Patching every single case after someone finds a new breaking case is not good IMHO taking into account CSS is a live spec and browsers differ in some cases.
@@ -427,7 +443,7 @@ PHP version used: 7.0.8
    
 ### v2.4.8-p6 21 Mar 2017
 
-* Fixed PHP CLI issues. See [#36](https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/pull/36)
+* Fixed PHP CLI issues. See [#36](https://github.com/nedarta/cssmin/pull/36)
 
 ### v2.4.8-p5 27 Feb 2017
 
@@ -435,7 +451,7 @@ PHP version used: 7.0.8
 
 ### v2.4.8-p4 22 Sep 2014
 
-* Composer support. The package is [tubalmartin/cssmin](https://packagist.org/packages/tubalmartin/cssmin)
+* Composer support. The package is [nedarta/cssmin](https://packagist.org/packages/nedarta/cssmin)
 * Fixed issue [#17]
 
 ### v2.4.8-p3 26 Apr 2014
@@ -455,7 +471,7 @@ PHP version used: 7.0.8
 * Fix for the `@keyframes 0%` step bug. Tests added.
 * LESS compiler upgraded to version 1.4.1
 
-[#11]: https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/11
-[#13]: https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/13
-[#14]: https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/14
-[#17]: https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/17
+[#11]: https://github.com/nedarta/cssmin/issues/11
+[#13]: https://github.com/nedarta/cssmin/issues/13
+[#14]: https://github.com/nedarta/cssmin/issues/14
+[#17]: https://github.com/nedarta/cssmin/issues/17

@@ -1,0 +1,88 @@
+/* CSS nesting */
+.card {
+    color: blue;
+    & a {
+        color: red;
+    }
+    &:hover {
+        border-width: 2px;
+    }
+    & > .child {
+        font-weight: 600;
+    }
+}
+
+/* Cascade layers */
+@layer base;
+@layer base {
+    .btn { color: red; }
+}
+@layer utilities {
+    .m-0 { margin: 0; }
+}
+
+/* Scope, container queries */
+@scope (.card) to (.content) {
+    .link { color: red; }
+}
+@container card (min-width: 400px) {
+    .card {
+        width: 400px;
+        container-type: inline-size;
+    }
+}
+
+/* New at-rules */
+@property --invoked-hue {
+    syntax: '<color>';
+    inherits: false;
+    initial-value: red;
+}
+@starting-style {
+    .box { opacity: 1; }
+}
+
+/* Math and environment functions */
+.sizing {
+    width: clamp(0px, 10dvw, 50rem);
+    inset-inline-start: env(safe-area-inset-left);
+}
+
+/* Fractional and viewport-relative units */
+.grid {
+    display: grid;
+    grid-template-columns: 0fr 1fr;
+    width: 100svh;
+    height: 100dvh;
+    max-width: 100cqi;
+}
+
+/* Modern colors */
+.colors {
+    color: oklch(54.31% 196.55 40.85);
+    background-color: oklch(0.6 0.09 265 / 0.5);
+    outline-color: color(display-p3 1 0 0);
+    background: color-mix(in srgb, red 30%, blue);
+    border-color: color-mix(in oklab, tomato, white);
+    accent-color: hwb(50 0% 0%);
+    text-decoration-color: hwb(120, 50%, 50%);
+    caret-color: #00000099;
+}
+
+/* Modern selectors */
+:is(a, b):has(> .child) {
+    color: red;
+}
+a:where(.class) {
+    color: blue;
+}
+input:disabled::placeholder {
+    color: #000;
+}
+
+/* Zero values with units not in the legacy unit map stay untouched */
+.dims {
+    rotate: 0deg;
+    animation-delay: 0ms;
+    transition-duration: 0.5s;
+}
