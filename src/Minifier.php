@@ -334,8 +334,10 @@ class Minifier
         );
 
         // Process strings so their content doesn't get accidentally minified
+        // (unrolled-loop quantifiers: avoid deep PCRE recursion that can exhaust
+        // the PCRE/JIT stack and silently return null on large inputs)
         $css = preg_replace_callback(
-            '/(?:"(?:[^\\\\"]|\\\\.|\\\\)*")|'."(?:'(?:[^\\\\']|\\\\.|\\\\)*')/S",
+            '/(?:"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"|\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\')/sS',
             array($this, 'processStringsCallback'),
             $css
         );
