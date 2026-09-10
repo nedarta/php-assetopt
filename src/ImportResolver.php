@@ -79,7 +79,13 @@ class ImportResolver
             return $css;
         }
 
-        $css = preg_replace('/@import[^;]*;/iS', '', $css);
+        // Remove only the statements that are actually resolved; a blanket
+        // regex like /@import[^;]*;/ would cut inside URLs that contain ';'
+        $remove = array();
+        foreach ($imports as $import) {
+            $remove[$import['statement']] = '';
+        }
+        $css = strtr($css, $remove);
 
         $resolved = array();
         foreach ($imports as $import) {
