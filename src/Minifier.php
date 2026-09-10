@@ -564,12 +564,25 @@ class Minifier
     {
         $body = trim($body);
 
+        // Custom property declarations with an empty value such as "--foo: ;" are
+        // valid CSS (the whitespace after the colon IS the value, usually produced
+        // by Sass when a variable is undefined). Protect that whitespace so the
+        // space removal below does not produce an invalid declaration ("--foo:;").
+        $body = preg_replace_callback(
+            '/--[A-Za-z0-9-]+:[ \t\r\n]+;/S',
+            function ($matches) {
+                return substr($matches[0], 0, strpos($matches[0], ':') + 1) .
+                    $this->registerPreservedToken(' ') . ';';
+            },
+            $body
+        );
+
         // Remove spaces before the things that should not have spaces before them.
         $body = preg_replace('/ ([:=,)*\/;\n])/S', '$1', $body);
 
         // Remove the spaces after the things that should not have spaces after them.
         $body = preg_replace('/([:=,(*\/!;\n]) /S', '$1', $body);
-        
+
         // Replace multiple semi-colons in a row by a single one
         $body = preg_replace('/;;+/S', ';', $body);
 

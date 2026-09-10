@@ -2,5 +2,6 @@
 !/.gitignore
 !/.github
 /vendor
+/output-tests
 composer.lock
 composer.phar

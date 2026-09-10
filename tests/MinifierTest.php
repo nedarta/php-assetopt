@@ -177,6 +177,11 @@ class MinifierTest extends TestCase
         $this->execTest('font-family-color');
     }
 
+    public function testEmptyCustomProperty()
+    {
+        $this->execTest('empty-custom-property');
+    }
+
     public function testImportantRule()
     {
         $this->execTest('important');

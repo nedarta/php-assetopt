@@ -1,0 +1,15 @@
+:root {
+  --bs-btn-font-family: ;
+  --bs-card-title-color: ;
+  --bs-box-shadow-sm: ;
+  --bs-box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}
+
+[data-bs-theme=light] {
+  --bs-btn-close-filter: rgb(255, 255, 255);
+}
+
+.card {
+  --bs-card-height: ;
+  padding: var(--bs-line-height);
+}
