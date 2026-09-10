@@ -17,27 +17,14 @@ class Command
 
     public function run()
     {
-        $opts = getopt(
-            'hi:o:',
-            array(
-                'help',
-                'input:',
-                'output:',
-                'dry-run',
-                'keep-sourcemap',
-                'keep-sourcemap-comment',
-                'linebreak-position:',
-                'memory-limit:',
-                'pcre-backtrack-limit:',
-                'pcre-recursion-limit:',
-                'remove-important-comments',
-                'resolve-imports'
-            )
-        );
+        // getopt() alone is not sufficient here: PHP stops parsing it at the
+        // first non-option argument, and unknown options (e.g. the
+        // yuicompressor.jar ' --type css' flag) obscure options that follow.
+        // The whole argument vector is therefore parsed manually.
+        list($inputs, $opts) = $this->parseRemainingArgs(1);
 
         $help = $this->getOpt(array('h', 'help'), $opts);
 
-        $inputs = array();
         foreach (array('i', 'input') as $alias) {
             if (isset($opts[$alias])) {
                 $inputs = array_merge($inputs, (array) $opts[$alias]);
@@ -150,9 +137,85 @@ class Command
         die(self::SUCCESS_EXIT);
     }
 
-    protected function getOpt($opts, $options)
+    protected function parseRemainingArgs($optIndex)
     {
-        $value = null;
+        $opts = array();
+        $inputs = array();
+
+        if (!isset($GLOBALS['argv']) || !is_array($GLOBALS['argv'])) {
+            return array($inputs, $opts);
+        }
+
+        // Options that consume the next argument as their value
+        $valueOptions = array(
+            'i', 'o', 'input', 'output', 'linebreak-position',
+            'memory-limit', 'pcre-backtrack-limit', 'pcre-recursion-limit'
+        );
+
+        // Options taking no value
+        $flagOptions = array(
+            'h', 'help', 'dry-run', 'keep-sourcemap', 'keep-sourcemap-comment',
+            'remove-important-comments', 'resolve-imports'
+        );
+
+        $count = count($GLOBALS['argv']);
+        for ($i = $optIndex; $i < $count; $i++) {
+            $arg = $GLOBALS['argv'][$i];
+            $name = ltrim($arg, '-');
+            $isOption = $arg !== '' && $arg[0] === '-' && $name !== '';
+            $inlineValue = strpos($name, '=') !== false;
+            $value = true;
+            if ($inlineValue) {
+                $value = substr($name, strpos($name, '=') + 1);
+                $name = substr($name, 0, strpos($name, '='));
+            }
+
+            // yuicompressor.jar compatibility flags, accepted and ignored
+            if ($name === 'type' || $name === 'disable-optimizations') {
+                if ($name === 'type' && $isOption && !$inlineValue) {
+                    $i++;
+                }
+                continue;
+            }
+
+            if (!$isOption) {
+                $inputs[] = $arg;
+                continue;
+            }
+
+            if (in_array($name, $valueOptions, true)) {
+                if (!$inlineValue) {
+                    if ($i + 1 >= $count) {
+                        continue;
+                    }
+                    $value = $GLOBALS['argv'][++$i];
+                }
+                $opts[$name] = isset($opts[$name]) ? array_merge((array) $opts[$name], array($value)) : array($value);
+                continue;
+            }
+
+            if (in_array($name, $flagOptions, true) && !$inlineValue) {
+                $opts[$name] = false;
+                continue;
+            }
+            // unknown options with attached values are ignored
+            if (!$inlineValue) {
+                $i++;
+            }
+        }
+
+        // getopt() compatibility: collapse single values to scalars
+        foreach ($opts as $name => $value) {
+            if (is_array($value) && count($value) === 1) {
+                $opts[$name] = $value[0];
+            }
+        }
+
+        return array($inputs, $opts);
+    }
+
+    protected function getOpt($opts, $options)
+    {        $value = null;
 
         if (is_string($opts)) {
             $opts = array($opts);
@@ -223,6 +286,7 @@ EOT;
     {
         print <<<'EOT'
 Usage: cssmin [options] -i <file> [-i <file> ...] [-o <file>]
+       cssmin <file> -o <file>         (yuicompressor.jar-style invocation)
   
   -i|--input <file>              File containing uncompressed CSS code.
                                  Can be used multiple times to merge and
@@ -245,3 +309,4 @@ Options:
 EOT;
     }
 }
+

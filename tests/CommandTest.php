@@ -168,6 +168,39 @@ class CommandTest extends TestCase
         $this->assertSame('#a{color:#fff;margin:0}', file_get_contents($output));
     }
 
+    public function testPositionalInputFileWithYii2StyleOutputOption()
+    {
+        $input = $this->tempFile('cssmin-pos-src.css', '.a { color: white; }');
+        $output = $this->tempFile('cssmin-pos-dst.css', '');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array($input, '-o', $output));
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('.a{color:#fff}', file_get_contents($output));
+    }
+
+    public function testYuiCompressorJarLayoutIsAcceptedAndIgnored()
+    {
+        $input = $this->tempFile('cssmin-yui-src.css', '.b { margin: 0px; }');
+        $output = $this->tempFile('cssmin-yui-dst.css', '');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--type', 'css', '--disable-optimizations', $input, '-o', $output));
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('.b{margin:0}', file_get_contents($output));
+    }
+
+    public function testInlineEqualsStyleOptionValue()
+    {
+        $input = $this->tempFile('cssmin-eq-src.css', '.c { color: white; }');
+        $output = $this->tempFile('cssmin-eq-dst.css', '');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--output='. $output, $input));
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('.c{color:#fff}', file_get_contents($output));
+    }
+
     public function testLinebreakPositionOption()
     {
         $input = $this->tempFile('cssmin-lbp-src.css', '#a{color:#fff}#b{color:#000}#c{color:#999}');

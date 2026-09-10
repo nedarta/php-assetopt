@@ -143,6 +143,20 @@ use nedarta\CssMin\Minifier as CSSmin;
 $css = (new ImportResolver)->resolve($css, $baseDir); // $baseDir for relative @import urls
 $compressedCss = (new CSSmin)->run($css);
 ```
+The input file can also be given as a positional argument, so the command line template matches the one built applications used with the original YUI compressor jar — `yuicompressor.jar --type css --disable-optimizations` flags are accepted and ignored:
+```
+./vendor/bin/cssmin ./my-css-file.css -o ./my-css-file.min.css --type css --disable-optimizations
+```
+
+This makes it a drop-in replacement for the YUI compressor in e.g. Yii2's AssetManager — replace
+```php
+'cssCompressor' => 'java -jar yuicompressor-2.4.8.jar --disable-optimizations --type css {from} -o {to}',
+```
+with
+```php
+'cssCompressor' => 'php /path/to/vendor/bin/cssmin {from} -o {to}',
+```
+
 See the binary help for all available CLI options.
 
 <a name="gui"></a>
