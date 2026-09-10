@@ -1,6 +1,6 @@
 <?php
 
-namespace nedarta\CssMin;
+namespace nedarta\AssetOpt;
 
 class Colors
 {

@@ -1,8 +1,8 @@
 <?php
 
-namespace nedarta\CssMin\Tests;
+namespace nedarta\AssetOpt\Tests;
 
-use nedarta\CssMin\Minifier;
+use nedarta\AssetOpt\Minifier;
 use PHPUnit\Framework\TestCase;
 
 class MinifierTest extends TestCase

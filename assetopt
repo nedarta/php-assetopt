@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-use nedarta\CssMin\Command;
+use nedarta\AssetOpt\Command;
 
 $autoloadPath = null;
 $autoloadPaths = array(

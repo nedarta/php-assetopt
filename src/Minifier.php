@@ -3,7 +3,7 @@
 /*!
  * CssMin
  * Author: Tubal Martin - http://tubalmartin.me/
- * Repo: https://github.com/nedarta/cssmin
+ * Repo: https://github.com/nedarta/php-assetopt
  *
  * This is a PHP port of the CSS minification tool distributed with YUICompressor,
  * itself a port of the cssmin utility by Isaac Schlueter - http://foohack.com/
@@ -20,7 +20,7 @@
  * by Yahoo! Inc. under the BSD (revised) open source license.
  */
 
-namespace nedarta\CssMin;
+namespace nedarta\AssetOpt;
 
 class Minifier
 {

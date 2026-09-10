@@ -1,6 +1,6 @@
 <?php
 
-namespace nedarta\CssMin;
+namespace nedarta\AssetOpt;
 
 class Command
 {
@@ -40,6 +40,8 @@ class Command
         $recursionLimit = $this->getOpt('pcre-recursion-limit', $opts);
         $removeImportantComments = $this->getOpt('remove-important-comments', $opts);
         $resolveImports = $this->getOpt('resolve-imports', $opts);
+        $type = $this->getOpt('type', $opts);
+        $type = ($type === 'js') ? 'js' : 'css';
 
         if (!is_null($help)) {
             $this->showHelp();
@@ -74,43 +76,33 @@ class Command
         }
 
         $css = implode("\n", $css);
-        
+
         $this->setStat('original-size', strlen($css));
-        
-        $cssmin = new Minifier;
 
-        if (!is_null($keepSourceMapComment)) {
-            $cssmin->keepSourceMapComment();
-        }
-
-        if (!is_null($removeImportantComments)) {
-            $cssmin->removeImportantComments();
-        }
-
-        if (!is_null($linebreakPosition)) {
-            $cssmin->setLineBreakPosition($linebreakPosition);
-        }
-        
-        if (!is_null($memoryLimit)) {
-            $cssmin->setMemoryLimit($memoryLimit);
-        }
-
-        if (!is_null($backtrackLimit)) {
-            $cssmin->setPcreBacktrackLimit($backtrackLimit);
-        }
-
-        if (!is_null($recursionLimit)) {
-            $cssmin->setPcreRecursionLimit($recursionLimit);
-        }
-        
         $this->setStat('compression-time-start', microtime(true));
-        
-        $css = $cssmin->run($css);
 
+        if ($type === 'js') {
+            try {
+                $css = (new JsStrip)->compress($css);
+            } catch (JsStripException $e) {
+                fwrite(STDERR, sprintf('JavaScript compression failed: %s%s', $e->getMessage(), PHP_EOL));
+                die(self::FAILURE_EXIT);
+            }
+        } else {
+            $css = $this->minifyCss(
+                $css,
+                !is_null($keepSourceMapComment),
+                !is_null($removeImportantComments),
+                $linebreakPosition,
+                $memoryLimit,
+                $backtrackLimit,
+                $recursionLimit
+            );
+        }
         $this->setStat('compression-time-end', microtime(true));
         $this->setStat('peak-memory-usage', memory_get_peak_usage(true));
         $this->setStat('compressed-size', strlen($css));
-        
+
         if (!is_null($dryrun)) {
             $this->showStats();
             die(self::SUCCESS_EXIT);
@@ -128,13 +120,54 @@ class Command
         }
 
         if (file_put_contents($output, $css) === false) {
-            fwrite(STDERR, 'Compressed CSS code could not be saved to output file' . PHP_EOL);
+            fwrite(STDERR, 'Compressed code could not be saved to output file' . PHP_EOL);
             die(self::FAILURE_EXIT);
         }
 
         $this->showStats();
 
         die(self::SUCCESS_EXIT);
+    }
+
+    /**
+     * @param string $css
+     * @param bool $keepSourceMapComment
+     * @param bool $removeImportantComments
+     * @param mixed $linebreakPosition
+     * @param mixed $memoryLimit
+     * @param mixed $backtrackLimit
+     * @param mixed $recursionLimit
+     * @return string
+     */
+    protected function minifyCss($css, $keepSourceMapComment, $removeImportantComments, $linebreakPosition, $memoryLimit, $backtrackLimit, $recursionLimit)
+    {
+        $cssmin = new Minifier;
+
+        if ($keepSourceMapComment) {
+            $cssmin->keepSourceMapComment();
+        }
+
+        if ($removeImportantComments) {
+            $cssmin->removeImportantComments();
+        }
+
+        if (!is_null($linebreakPosition)) {
+            $cssmin->setLineBreakPosition($linebreakPosition);
+        }
+
+        if (!is_null($memoryLimit)) {
+            $cssmin->setMemoryLimit($memoryLimit);
+        }
+
+        if (!is_null($backtrackLimit)) {
+            $cssmin->setPcreBacktrackLimit($backtrackLimit);
+        }
+
+        if (!is_null($recursionLimit)) {
+            $cssmin->setPcreRecursionLimit($recursionLimit);
+        }
+
+        return $cssmin->run($css);
     }
 
     protected function parseRemainingArgs($optIndex)
@@ -170,9 +203,13 @@ class Command
                 $name = substr($name, 0, strpos($name, '='));
             }
 
-            // yuicompressor.jar compatibility flags, accepted and ignored
+            // --type selects the minifier pipeline ('css' by default, 'js' at
+            // the moment); --disable-optimizations stays accepted and ignored
             if ($name === 'type' || $name === 'disable-optimizations') {
                 if ($name === 'type' && $isOption && !$inlineValue) {
+                    if ($i + 1 < $count && in_array($GLOBALS['argv'][$i + 1], array('js', 'css'), true)) {
+                        $opts['type'] = $GLOBALS['argv'][$i + 1];
+                    }
                     $i++;
                 }
                 continue;
@@ -285,8 +322,8 @@ EOT;
     protected function showHelp()
     {
         print <<<'EOT'
-Usage: cssmin [options] -i <file> [-i <file> ...] [-o <file>]
-       cssmin <file> -o <file>         (yuicompressor.jar-style invocation)
+Usage: assetopt [options] -i <file> [-i <file> ...] [-o <file>]
+       assetopt <file> -o <file>       (yuicompressor.jar / closure-compiler-style invocation)
   
   -i|--input <file>              File containing uncompressed CSS code.
                                  Can be used multiple times to merge and
@@ -305,6 +342,9 @@ Options:
   --remove-important-comments    Removes !important comments from output.
   --resolve-imports              Inlines the stylesheets pointed to by @import
                                  at-rules (including remote http/https urls).
+  --type <css|js>                Selects the minifier pipeline: code type of the
+                                 input. CSS is used by default, 'js' strips
+                                 comments and whitespaces from JavaScript code.
 
 EOT;
     }

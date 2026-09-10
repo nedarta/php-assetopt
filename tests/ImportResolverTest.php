@@ -1,8 +1,8 @@
 <?php
 
-namespace nedarta\CssMin\Tests;
+namespace nedarta\AssetOpt\Tests;
 
-use nedarta\CssMin\ImportResolver;
+use nedarta\AssetOpt\ImportResolver;
 use PHPUnit\Framework\TestCase;
 
 class ImportResolverTest extends TestCase

@@ -1,8 +1,8 @@
 {
-    "name": "nedarta/cssmin",
-    "description": "A PHP port of the YUI CSS compressor",
-    "keywords": ["yui", "compressor", "css", "cssmin", "compress", "minify"],
-    "homepage": "https://github.com/nedarta/cssmin",
+    "name": "nedarta/php-assetopt",
+    "description": "PHP asset optimizer: a clean port of the YUI CSS compressor plus a whitespace/comment stripper for JavaScript",
+    "keywords": ["compress", "minify", "css", "javascript", "assets", "optimizer"],
+    "homepage": "https://github.com/nedarta/php-assetopt",
     "license": "BSD-3-Clause",
     "authors": [
         {
@@ -15,21 +15,21 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/nedarta/cssmin/issues",
-        "source": "https://github.com/nedarta/cssmin"
+        "issues": "https://github.com/nedarta/php-assetopt/issues",
+        "source": "https://github.com/nedarta/php-assetopt"
     },
     "autoload": {
         "psr-4": {
-            "nedarta\\CssMin\\": "src"
+            "nedarta\\AssetOpt\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "nedarta\\CssMin\\Tests\\": "tests"
+            "nedarta\\AssetOpt\\Tests\\": "tests"
         }
     },
     "bin": [
-        "cssmin"
+        "assetopt"
     ],
     "require": {
         "php": ">=8.2",

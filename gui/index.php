@@ -2,7 +2,7 @@
 
 require '../vendor/autoload.php';
 
-use nedarta\CssMin\Minifier as CSSmin;
+use nedarta\AssetOpt\Minifier as CSSmin;
 
 mb_internal_encoding('UTF-8');
 
@@ -63,7 +63,7 @@ else :
     <div class="navbar">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="brand" href="https://github.com/nedarta/cssmin">YUI CSS compressor PHP port</a>
+          <a class="brand" href="https://github.com/nedarta/php-assetopt">php-assetopt</a>
         </div>
       </div>
     </div>

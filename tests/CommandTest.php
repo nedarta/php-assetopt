@@ -1,8 +1,8 @@
 <?php
 
-namespace nedarta\CssMin\Tests;
+namespace nedarta\AssetOpt\Tests;
 
-use nedarta\CssMin\Command;
+use nedarta\AssetOpt\Command;
 use PHPUnit\Framework\TestCase;
 
 class CommandTest extends TestCase
@@ -26,7 +26,7 @@ class CommandTest extends TestCase
      */
     protected function execBin($arguments)
     {
-        $cmd = escapeshellarg(PHP_BINARY) .' '. escapeshellarg($this->projectRoot .'/cssmin');
+        $cmd = escapeshellarg(PHP_BINARY) .' '. escapeshellarg($this->projectRoot .'/assetopt');
         foreach ($arguments as $argument) {
             $cmd .= ' '. escapeshellarg($argument);
         }
@@ -89,7 +89,7 @@ class CommandTest extends TestCase
     {
         list($stdout, $stderr, $exitCode) = $this->execBin(array('--help'));
         $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('Usage: cssmin', $stdout);
+        $this->assertStringContainsString('Usage: assetopt', $stdout);
     }
 
     public function testMissingInputArgument()
@@ -199,6 +199,66 @@ class CommandTest extends TestCase
 
         $this->assertSame(0, $exitCode);
         $this->assertSame('.c{color:#fff}', file_get_contents($output));
+    }
+
+    public function testMinifiesJavaScriptTypeOptionPositional()
+    {
+        $input = $this->tempFile('cssmin-js-src.js', "// header\nfunction a ( b ){\n    /* remove */\n    return b + 1;\n}");
+        $output = $this->tempFile('cssmin-js-dst.js', '');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--disable-optimizations', '--type', 'js', $input, '-o', $output));
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('function a(b){return b+1;}', file_get_contents($output));
+    }
+
+    public function testJsTypeInputIsNotRunThroughCssMinifier()
+    {
+        $input = $this->tempFile('cssmin-js-cssify.js', 'var x = "a{color:red}";');
+        $output = $this->tempFile('cssmin-js-cssify-dst.js', '');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--type', 'js', '-i', $input, '-o', $output));
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('var x="a{color:red}";', file_get_contents($output));
+    }
+
+    public function testJsNocompressBlockIsPreservedVerbatim()
+    {
+        $input = $this->tempFile(
+            'cssmin-js-nc.js',
+            'var a=1; /* BEGIN NOCOMPRESS */ var  b   =   2 ; /* END NOCOMPRESS */ var c=3;'
+        );
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--type', 'js', '-i', $input));
+
+        $this->assertSame(0, $exitCode);
+        $expected = $stdout;
+        $this->assertStringContainsString('var  b   =   2 ;', $expected);
+        $this->assertStringContainsString('var a=1;', $expected);
+        $this->assertStringContainsString('var c=3;', $expected);
+    }
+
+    public function testJsCompressionFailureReportsError()
+    {
+        $input = $this->tempFile('cssmin-js-bad.js', 'var a = 1; /* unterminated');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--type', 'js', '-i', $input));
+
+        $this->assertSame(1, $exitCode);
+        $this->assertStringContainsString('JavaScript compression failed', $stderr);
+        $this->assertStringContainsString('Found invalid /*..*/ comment', $stderr);
+    }
+
+    public function testUnknownTypeFallsBackToCss()
+    {
+        $input = $this->tempFile('cssmin-unknown-type.css', '.a { color: white; }');
+        $output = $this->tempFile('cssmin-unknown-type-dst.css', '');
+
+        list($stdout, $stderr, $exitCode) = $this->execBin(array('--type', 'scss', '-i', $input, '-o', $output));
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('.a{color:#fff}', file_get_contents($output));
     }
 
     public function testLinebreakPositionOption()

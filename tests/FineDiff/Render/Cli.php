@@ -1,6 +1,6 @@
 <?php
 
-namespace nedarta\CssMin\Tests\FineDiff\Render;
+namespace nedarta\AssetOpt\Tests\FineDiff\Render;
 
 use cogpowered\FineDiff\Render\Renderer;
 
