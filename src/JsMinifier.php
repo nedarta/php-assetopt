@@ -33,9 +33,8 @@ class JsMinifier
             $options['comments'] = false;
 
             $ast = Peast::latest($source, $options)->parse();
-            $result = $ast->render(new Compact());
 
-            return trim($result);
+            return trim($ast->render(new Compact()));
         } catch (\Throwable $e) {
             throw new JsStripException(
                 sprintf('Unable to parse JavaScript: %s', $e->getMessage()),
