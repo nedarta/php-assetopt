@@ -329,4 +329,24 @@ class MinifierTest extends TestCase
         $this->execTest('unclosed-curly-brace');
     }
 
+    public function testUnquotedFontTokensAreResetBetweenRuns()
+    {
+        $first = $this->cssmin->run('a{font-family:Helvetica Neue, sans-serif; color: darkgray}');
+        $second = $this->cssmin->run('b{color: whitesmoke}');
+
+        $this->assertSame('a{font-family:Helvetica Neue,sans-serif;color:#a9a9a9}', $first);
+        $this->assertSame('b{color:#f5f5f5}', $second);
+    }
+
+    public function testModernColorSyntaxIsPreservedOrShortened()
+    {
+        $this->cssmin = new Minifier;
+
+        // Space-separated rgb() shortens correctly to hex
+        $this->assertSame('a{color:#369}', $this->cssmin->run('a{color:rgb(51 102 153)}'));
+        // rgb() with alpha must be left untouched (hex output would lose alpha)
+        $this->assertSame('a{color:rgb(51 102 153/0.5)}', $this->cssmin->run('a{color:rgb(51 102 153 / 0.5)}'));
+        // Comma syntax still works
+        $this->assertSame('a{color:#369}', $this->cssmin->run('a{color:rgb(51,102,153)}'));
+    }
 }

@@ -213,6 +213,7 @@ class Minifier
         $this->comments = array();
         $this->ruleBodies = array();
         $this->preservedTokens = array();
+        $this->unquotedFontTokens = array();
     }
 
     /**
@@ -302,6 +303,30 @@ class Minifier
     }
 
     /**
+     * Wraps preg_replace / preg_replace_callback to fail loudly when
+     * PCRE errors out (returns null) instead of silently producing
+     * empty output.
+     * @param string|array $pattern
+     * @param string|array|\Closure $replacement
+     * @param string $subject
+     * @return string
+     */
+    private function safePregReplace($pattern, $replacement, $subject)
+    {
+        $result = $replacement instanceof \Closure
+            ? preg_replace_callback($pattern, $replacement, $subject)
+            : preg_replace($pattern, $replacement, $subject);
+
+        if ($result === null) {
+            throw new \RuntimeException(
+                'PCRE error while replacing (code: '. preg_last_error() .'): '. preg_last_error_msg()
+            );
+        }
+
+        return $result;
+    }
+
+    /**
      * Parses & minifies the given input CSS string
      * @param string $css
      * @return string
@@ -312,22 +337,26 @@ class Minifier
         $css = $this->processDataUrls($css);
 
         // Process comments
-        $css = preg_replace_callback(
+        $css = $this->safePregReplace(
             '/(?<!\\\\)\/\*(.*?)\*(?<!\\\\)\//Ss',
-            array($this, 'processCommentsCallback'),
+            function ($matches) {
+                return '/*'. $this->registerCommentToken($matches[1]) .'*/';
+            },
             $css
         );
 
         // IE7: Process Microsoft matrix filters (whitespaces between Matrix parameters). Can contain strings inside.
-        $css = preg_replace_callback(
+        $css = $this->safePregReplace(
             '/filter:\s*progid:DXImageTransform\.Microsoft\.Matrix\(([^)]+)\)/Ss',
-            array($this, 'processOldIeSpecificMatrixDefinitionCallback'),
+            function ($matches) {
+                return 'filter:progid:DXImageTransform.Microsoft.Matrix('. $this->registerPreservedToken($matches[1]) .')';
+            },
             $css
         );
 
         // Process quoted unquotable attribute selectors to unquote them. Covers most common cases.
         // Likelyhood of a quoted attribute selector being a substring in a string: Very very low.
-        $css = preg_replace(
+        $css = $this->safePregReplace(
             '/\[\s*([a-z][a-z-]+)\s*([\*\|\^\$~]?=)\s*[\'"](-?[a-z_][a-z0-9-_]+)[\'"]\s*\]/Ssi',
             '[$1$2$3]',
             $css
@@ -336,19 +365,23 @@ class Minifier
         // Process strings so their content doesn't get accidentally minified
         // (unrolled-loop quantifiers: avoid deep PCRE recursion that can exhaust
         // the PCRE/JIT stack and silently return null on large inputs)
-        $css = preg_replace_callback(
+        $css = $this->safePregReplace(
             '/(?:"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"|\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\')/sS',
-            array($this, 'processStringsCallback'),
+            function ($matches) {
+                return $this->processStringsCallback($matches);
+            },
             $css
         );
 
         // Normalize all whitespace strings to single spaces. Easier to work with that way.
-        $css = preg_replace('/\s+/S', ' ', $css);
+        $css = $this->safePregReplace('/\s+/S', ' ', $css);
 
         // Process import At-rules with unquoted URLs so URI reserved characters such as a semicolon may be used safely.
-        $css = preg_replace_callback(
+        $css = $this->safePregReplace(
             '/@import url\(([^\'"]+?)\)( |;)/Si',
-            array($this, 'processImportUnquotedUrlAtRulesCallback'),
+            function ($matches) {
+                return '@import url('. $this->registerPreservedToken($matches[1]) .')'. $matches[2];
+            },
             $css
         );
         
@@ -421,26 +454,6 @@ class Minifier
     }
 
     /**
-     * Registers all comments found as candidates to be preserved.
-     * @param array $matches
-     * @return string
-     */
-    private function processCommentsCallback($matches)
-    {
-        return '/*'. $this->registerCommentToken($matches[1]) .'*/';
-    }
-
-    /**
-     * Preserves old IE Matrix string definition
-     * @param array $matches
-     * @return string
-     */
-    private function processOldIeSpecificMatrixDefinitionCallback($matches)
-    {
-        return 'filter:progid:DXImageTransform.Microsoft.Matrix('. $this->registerPreservedToken($matches[1]) .')';
-    }
-
-    /**
      * Preserves strings found
      * @param array $matches
      * @return string
@@ -461,17 +474,6 @@ class Minifier
         $match = str_ireplace('progid:DXImageTransform.Microsoft.Alpha(Opacity=', 'alpha(opacity=', $match);
 
         return $quote . $this->registerPreservedToken($match) . $quote;
-    }
-
-    /**
-     * Searches & replaces all import at-rule unquoted urls with tokens so URI reserved characters such as a semicolon
-     * may be used safely in a URL.
-     * @param array $matches
-     * @return string
-     */
-    private function processImportUnquotedUrlAtRulesCallback($matches)
-    {
-        return '@import url('. $this->registerPreservedToken($matches[1]) .')'. $matches[2];
     }
 
     /**
@@ -886,7 +888,21 @@ class Minifier
     private function shortenHslAndRgbToHexCallback($matches)
     {
         $type = $matches[1];
-        $values = explode(',', $matches[2]);
+        $values = preg_split('/\s*,\s*/', trim($matches[2]));
+
+        // CSS Color 4 space-separated syntax e.g. rgb(51 102 153)
+        // or rgb(51 102 153 / 0.5). Alpha is not supported in hex
+        // output here, so leave the whole value untouched if found.
+        if (count($values) === 1 && strpos($values[0], ' ') !== false) {
+            $spaceSeparated = preg_split('/\s+/', $values[0]);
+            if (strpos($values[0], '/') !== false) {
+                return $matches[0];
+            }
+            if (count($spaceSeparated) >= 3) {
+                $values = array_slice($spaceSeparated, 0, 3);
+            }
+        }
+
         $terminator = $matches[3];
         
         if ($type === 'hsl') {
