@@ -1,6 +1,6 @@
 {
     "name": "nedarta/php-assetopt",
-    "description": "PHP asset optimizer: a clean port of the YUI CSS compressor plus a whitespace/comment stripper for JavaScript",
+    "description": "PHP asset optimizer: a clean port of the YUI CSS compressor plus a JavaScript minifier",
     "keywords": ["compress", "minify", "css", "javascript", "assets", "optimizer"],
     "homepage": "https://github.com/nedarta/php-assetopt",
     "license": "BSD-3-Clause",
@@ -33,7 +33,8 @@
     ],
     "require": {
         "php": ">=8.2",
-        "ext-pcre": "*"
+        "ext-pcre": "*",
+        "mck89/peast": "^1.18"
     },
     "require-dev": {
         "cogpowered/finediff": "0.3.*",
