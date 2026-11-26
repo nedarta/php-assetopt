@@ -206,6 +206,22 @@ class JsStrip
                 $lch = substr($result, -1);
                 if ($ch == "\n") $this->line++;
 
+                // A line terminator can be the only thing separating two statements (automatic
+                // semicolon insertion): "var f = function () {}" followed by "var x = 1" is valid,
+                // while the compressed "}var" is not. JSMin keeps a newline when the next character
+                // starts a word; do the same before dropping the whitespace run.
+                if (($ch == "\n" || $ch == "\r") && $idx + 1 < $slen) {
+                    $lookahead = $idx + 1;
+                    while ($lookahead < $slen && in_array($source[$lookahead], self::WHITESPACE_CHARS, true)) {
+                        $lookahead++;
+                    }
+                    if ($lookahead < $slen && preg_match('/[A-Za-z0-9_$\\\\]/', $source[$lookahead]) === 1) {
+                        $result .= "\n";
+                        $idx = $lookahead;
+                        continue;
+                    }
+                }
+
                 // Only consider deleting whitespace if the signs before and after
                 // are not equal and are not an operator which may not follow itself.
                 if ($idx + 1 < $slen && ((!$lch || $source[$idx + 1] == ' ')
