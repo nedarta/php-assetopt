@@ -14,6 +14,8 @@ use Peast\Peast;
  */
 class JsMinifier
 {
+    private const NOCOMPRESS_PATTERN = '~/\* BEGIN NOCOMPRESS \*/(.*?)/\* END NOCOMPRESS \*/~s';
+
     /**
      * Compress the given JavaScript source.
      *
@@ -29,12 +31,14 @@ class JsMinifier
             return '';
         }
 
+        list($source, $protected) = $this->protectNoCompressBlocks($source);
+
         try {
             $options['comments'] = false;
 
             $ast = Peast::latest($source, $options)->parse();
 
-            return trim($ast->render(new Compact()));
+            return trim($this->restoreNoCompressBlocks(trim($ast->render(new Compact())), $protected));
         } catch (\Throwable $e) {
             throw new JsStripException(
                 sprintf('Unable to parse JavaScript: %s', $e->getMessage()),
@@ -42,5 +46,47 @@ class JsMinifier
                 $e
             );
         }
+    }
+
+    /**
+     * Replaces every `/* BEGIN NOCOMPRESS *\/ ... /* END NOCOMPRESS *\/` region with an empty
+     * statement placeholder, so the parser never touches it and it survives verbatim.
+     *
+     * @param string $source
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function protectNoCompressBlocks($source)
+    {
+        $protected = array();
+        $index = 0;
+
+        $source = preg_replace_callback(
+            self::NOCOMPRESS_PATTERN,
+            static function ($matches) use (&$protected, &$index) {
+                $placeholder = 'ASSETOPTNOCOMPRESS' . $index++;
+                $protected[$placeholder] = '/* BEGIN NOCOMPRESS */' . $matches[1] . '/* END NOCOMPRESS */';
+
+                return ';' . $placeholder . ';';
+            },
+            $source
+        );
+
+        return array($source, $protected);
+    }
+
+    /**
+     * Puts the original NOCOMPRESS regions back in place of their placeholders.
+     *
+     * @param string $source
+     * @param array<string, string> $protected
+     * @return string
+     */
+    private function restoreNoCompressBlocks($source, array $protected)
+    {
+        foreach ($protected as $placeholder => $block) {
+            $source = str_replace($placeholder, $block, $source);
+        }
+
+        return $source;
     }
 }
