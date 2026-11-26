@@ -21,7 +21,7 @@ class JsStripTest extends TestCase
 
         $result = (new JsMinifier)->compress($source);
 
-        $this->assertSame('function add(first,second){return first+second}', $result);
+        $this->assertSame('function add(first,second){return first+second;}', $result);
     }
 
     public function testLegacyFacadeUsesMinifier(): void
@@ -70,7 +70,7 @@ class JsStripTest extends TestCase
 
         $result = (new JsMinifier)->compress($source, array('sourceType' => 'module'));
 
-        $this->assertSame('export const value=42', $result);
+        $this->assertSame('export const value=42;', $result);
     }
 
     public function testCommentsOptionCannotReenableComments(): void
@@ -80,6 +80,18 @@ class JsStripTest extends TestCase
         $result = (new JsMinifier)->compress($source, array('comments' => true));
 
         $this->assertStringNotContainsString('remove', $result);
+    }
+
+    public function testAStatementEndingFunctionExpressionKeepsItsSeparator(): void
+    {
+        // Automatic semicolon insertion needs the line terminator between the function
+        // expression statement and the next `var`; "}var" is a syntax error. The compact
+        // formatter must emit the separator (this broke Yii's yii.activeForm.js).
+        $source = "var format = function (value) { return value; }\nvar count = 2;\n";
+
+        $result = (new JsMinifier)->compress($source);
+
+        $this->assertSame('var format=function(value){return value;};var count=2;', $result);
     }
 
     public function testInvalidJavaScriptThrowsException(): void

@@ -247,7 +247,7 @@ class CommandTest extends TestCase
 
         $this->assertSame(1, $exitCode);
         $this->assertStringContainsString('JavaScript compression failed', $stderr);
-        $this->assertStringContainsString('Found invalid /*..*/ comment', $stderr);
+        $this->assertStringContainsString('Unterminated comment', $stderr);
     }
 
     public function testUnknownTypeFallsBackToCss()
